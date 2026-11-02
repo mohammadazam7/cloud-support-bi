@@ -18,6 +18,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.10"]
 
+[project.scripts]
+support-bi = "support_bi.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

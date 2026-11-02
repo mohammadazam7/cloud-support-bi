@@ -87,7 +87,9 @@ class RawTables:
 def _ts(start: dt.date, minutes: np.ndarray) -> pa.Array:
     base = np.datetime64(dt.datetime.combine(start, dt.time()), "s")
     secs = np.round(minutes * 60).astype("int64")
-    return pa.array(base + secs.astype("timedelta64[s]"), type=pa.timestamp("s", tz="UTC"))
+    return pa.array(base + secs.astype("timedelta64[s]"), type=pa.timestamp("s", tz="UTC")).cast(
+        pa.timestamp("ms", tz="UTC")
+    )
 
 
 def _customers(cfg: GeneratorConfig, rng: np.random.Generator) -> tuple[pa.Table, pa.Table]:
@@ -110,8 +112,9 @@ def _customers(cfg: GeneratorConfig, rng: np.random.Generator) -> tuple[pa.Table
     rows: list[tuple[str, str, dt.date]] = []
     for cid, t in zip(ids, tier_idx, strict=True):
         rows.append((str(cid), TIERS[t].code, cfg.start))
-        if t < len(TIERS) - 1 and rng.random() < cfg.tier_upgrade_rate:
-            when = cfg.start + dt.timedelta(days=int(rng.integers(30, cfg.days)))
+        earliest = min(30, cfg.days // 2)
+        if t < len(TIERS) - 1 and earliest > 0 and rng.random() < cfg.tier_upgrade_rate:
+            when = cfg.start + dt.timedelta(days=int(rng.integers(earliest, cfg.days)))
             rows.append((str(cid), TIERS[t + 1].code, when))
     history = pa.table(
         {
