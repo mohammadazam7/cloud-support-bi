@@ -1,0 +1,23 @@
+name: Metric or report request
+description: Request a new metric, dimension, dashboard tile or report section
+labels: [enhancement]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Business question
+      description: The decision this would inform, and who makes it.
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: Proposed definition
+      description: Numerator, denominator, grain, filters and time window.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance check
+      description: A value the result can be reconciled against.

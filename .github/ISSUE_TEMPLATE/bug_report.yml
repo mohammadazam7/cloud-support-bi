@@ -1,0 +1,24 @@
+name: Bug report
+description: A model, test, dashboard or report produced wrong numbers or failed
+labels: [bug]
+body:
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Layer
+      options: [data generator, dbt staging, dbt marts, metric layer, LookML, leadership report, analytics, web app]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+      description: Include the metric, the filter and the value you saw versus the value you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and environment
+      description: The exact command, the dbt target (duckdb or bigquery) and the generator seed.
+      render: shell
