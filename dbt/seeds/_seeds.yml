@@ -1,0 +1,15 @@
+version: 2
+
+seeds:
+  - name: products
+    description: Product dimension, written from support_bi.catalog by `support-bi seeds`.
+  - name: priorities
+    description: Case priorities and their base first-response targets in minutes.
+  - name: tiers
+    description: Support tiers and the multiplier each applies to every SLA target.
+  - name: sla_targets
+    description: First-response target in minutes for every priority and tier pair.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [priority, tier]

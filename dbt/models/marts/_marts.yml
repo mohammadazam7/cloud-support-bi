@@ -1,0 +1,104 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: >
+      Customer dimension, type 2 on support tier. One row per customer per tier period.
+      Join facts on the period that contains the event date.
+    columns:
+      - name: customer_key
+        description: Surrogate key for one customer tier period.
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests: [not_null]
+      - name: tier
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [STD, ENH, PREM]
+      - name: is_current
+        description: True for the period that is still in force.
+
+  - name: dim_product
+    columns:
+      - name: product_code
+        data_tests: [unique, not_null]
+
+  - name: dim_priority
+    columns:
+      - name: priority
+        data_tests: [unique, not_null]
+
+  - name: dim_agent
+    columns:
+      - name: agent_id
+        data_tests: [unique, not_null]
+
+  - name: dim_date
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+
+  - name: fct_cases
+    description: >
+      One row per support case with its tier at open, stage durations and whether the
+      first-response SLA was met. Partitioned by month and clustered by product and
+      priority on BigQuery.
+    columns:
+      - name: case_id
+        data_tests: [unique, not_null]
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: product_code
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_code
+      - name: priority
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_priority')
+                field: priority
+      - name: agent_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_agent')
+                field: agent_id
+      - name: created_date
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: first_response_minutes
+        description: Minutes from case creation to the first agent response.
+        data_tests: [not_null]
+      - name: first_response_target_minutes
+        description: Target for this priority and the tier held at open, from sla_targets.
+        data_tests: [not_null]
+      - name: first_response_sla_met
+        data_tests: [not_null]
+      - name: csat_score
+        description: Satisfaction score from 1 to 5, null when the customer did not respond.
+
+  - name: fct_case_events
+    description: >
+      Every case lifecycle event, incremental on event_id with a lookback window for late
+      arrivals. Partitioned by day and clustered by event type on BigQuery.
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: case_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('fct_cases')
+                field: case_id

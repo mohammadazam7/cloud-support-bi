@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: int_case_lifecycle
+    description: One row per case with the timestamp of each lifecycle milestone.
+    columns:
+      - name: case_id
+        data_tests: [unique, not_null]
+      - name: first_response_at
+        data_tests: [not_null]
+      - name: first_resolved_at
+        data_tests: [not_null]
+      - name: reopen_count
+        description: Number of times the case was reopened after being resolved.
+
+  - name: int_customer_tier_periods
+    description: >
+      Support tier periods per customer as half-open windows [valid_from, valid_to).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [customer_id, valid_from]
