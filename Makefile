@@ -1,4 +1,4 @@
-.PHONY: install lock lint format typecheck test audit check data clean
+.PHONY: install lock lint format typecheck test audit check data models clean
 
 install:
 	pip install -r requirements-dev.lock
@@ -27,6 +27,9 @@ audit:
 data:
 	support-bi generate --out data/raw
 	support-bi verify --out data/raw
+
+models: data
+	cd dbt && dbt build --profiles-dir .
 
 check: lint typecheck test
 

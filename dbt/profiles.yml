@@ -1,0 +1,18 @@
+# Two targets for the same models: DuckDB for local runs and CI, BigQuery for deployment.
+# BigQuery credentials are read from the environment and are never committed.
+support_bi:
+  target: "{{ env_var('SUPPORT_BI_TARGET', 'duckdb') }}"
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('SUPPORT_BI_DUCKDB', '../data/warehouse.duckdb') }}"
+      threads: 4
+    bigquery:
+      type: bigquery
+      method: service-account
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS', '') }}"
+      project: "{{ env_var('SUPPORT_BI_GCP_PROJECT', 'unset') }}"
+      dataset: "{{ env_var('SUPPORT_BI_DATASET', 'support_bi') }}"
+      location: "{{ env_var('SUPPORT_BI_LOCATION', 'US') }}"
+      threads: 8
+      job_execution_timeout_seconds: 300
