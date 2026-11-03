@@ -5,6 +5,6 @@ select
     product_code,
     priority,
     channel,
-    cast(created_at as timestamp) as created_at,
+    {{ utc_timestamp('created_at') }} as created_at,
     subject
 from {{ raw_table('cases') }}
