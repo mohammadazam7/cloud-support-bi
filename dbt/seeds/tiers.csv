@@ -1,0 +1,4 @@
+tier,tier_name,response_multiplier,tier_rank
+STD,Standard,1.0,1
+ENH,Enhanced,0.75,2
+PREM,Premium,0.5,3

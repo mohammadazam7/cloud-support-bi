@@ -5,6 +5,7 @@ profile: support_bi
 
 model-paths: ["models"]
 macro-paths: ["macros"]
+seed-paths: ["seeds"]
 test-paths: ["tests"]
 target-path: target
 clean-targets: [target, dbt_packages]

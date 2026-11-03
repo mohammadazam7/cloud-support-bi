@@ -1,0 +1,13 @@
+priority,tier,first_response_target_minutes
+P1,STD,15
+P1,ENH,11
+P1,PREM,8
+P2,STD,60
+P2,ENH,45
+P2,PREM,30
+P3,STD,240
+P3,ENH,180
+P3,PREM,120
+P4,STD,480
+P4,ENH,360
+P4,PREM,240

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from support_bi.generator import GeneratorConfig, generate
 from support_bi.raw_zone import verify_raw_zone, write_raw_zone
+from support_bi.seeds import write_seeds
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -28,6 +29,9 @@ def _parser() -> argparse.ArgumentParser:
 
     v = sub.add_parser("verify", help="check raw zone files against their manifest")
     v.add_argument("--out", type=Path, default=Path("data/raw"), help="raw zone directory")
+
+    s = sub.add_parser("seeds", help="write the catalog as dbt seed files")
+    s.add_argument("--out", type=Path, default=Path("dbt/seeds"), help="seed directory")
     return p
 
 
@@ -46,6 +50,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         manifest = write_raw_zone(generate(cfg), args.out, cfg)
         for name, meta in manifest["tables"].items():
             print(f"{name:<22} {meta['rows']:>9,} rows")
+        return 0
+    if args.command == "seeds":
+        for path in write_seeds(args.out):
+            print(path)
         return 0
     problems = verify_raw_zone(args.out)
     for p in problems:
