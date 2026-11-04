@@ -9,6 +9,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from support_bi import metrics as metric_layer
 from support_bi.generator import GeneratorConfig, generate
 from support_bi.raw_zone import verify_raw_zone, write_raw_zone
 from support_bi.seeds import write_seeds
@@ -32,7 +33,37 @@ def _parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("seeds", help="write the catalog as dbt seed files")
     s.add_argument("--out", type=Path, default=Path("dbt/seeds"), help="seed directory")
+
+    m = sub.add_parser("metrics", help="write the metric dictionary from metrics/metrics.yml")
+    m.add_argument("--out", type=Path, default=Path("docs/metric_dictionary.md"))
+
+    q = sub.add_parser("metric", help="print the SQL for one metric, or run it on DuckDB")
+    q.add_argument("name", help="metric name from metrics/metrics.yml")
+    q.add_argument("--by", action="append", default=[], help="dimension to group by")
+    q.add_argument("--where", action="append", default=[], metavar="DIM=VALUE")
+    q.add_argument("--warehouse", type=Path, help="DuckDB file to run the query against")
     return p
+
+
+def _metric(args: argparse.Namespace) -> int:
+    defined = metric_layer.load()
+    if args.name not in defined:
+        print(f"unknown metric {args.name}; known: {', '.join(defined)}", file=sys.stderr)
+        return 2
+    where = dict(item.split("=", 1) for item in args.where)
+    query = metric_layer.sql(defined[args.name], group_by=args.by, where=where)
+    if args.warehouse is None:
+        print(query)
+        return 0
+    import duckdb
+
+    with duckdb.connect(str(args.warehouse), read_only=True) as con:
+        result = con.execute(query)
+        names = [d[0] for d in result.description]
+        print("\t".join(names))
+        for row in result.fetchall():
+            print("\t".join("" if v is None else str(v) for v in row))
+    return 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -51,6 +82,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         for name, meta in manifest["tables"].items():
             print(f"{name:<22} {meta['rows']:>9,} rows")
         return 0
+    if args.command == "metrics":
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(metric_layer.dictionary(metric_layer.load()), encoding="utf-8")
+        print(args.out)
+        return 0
+    if args.command == "metric":
+        return _metric(args)
     if args.command == "seeds":
         for path in write_seeds(args.out):
             print(path)

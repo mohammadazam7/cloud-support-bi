@@ -221,6 +221,7 @@ pytz==2026.6
     #   dbt-core
 pyyaml==6.0.3
     # via
+    #   support-bi (pyproject.toml)
     #   dbt-core
     #   metricflow
     #   pre-commit
@@ -264,6 +265,8 @@ tomli==2.5.0
     # via pip-audit
 tomli-w==1.2.0
     # via pip-audit
+types-pyyaml==6.0.12.20261103
+    # via support-bi (pyproject.toml)
 typing-extensions==4.16.0
     # via
     #   cyclonedx-python-lib

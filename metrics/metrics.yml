@@ -1,0 +1,121 @@
+# Governed definitions of every support metric. This file is the single source of truth:
+# the SQL in support_bi.metrics, the metric dictionary in docs/metric_dictionary.md and
+# the LookML measures are all derived from it. Change a definition here, in one pull
+# request, and nowhere else.
+#
+# kind: ratio    value = sum(numerator) / sum(denominator) over agg_support_daily
+#       level    value = average over days of the daily sum of `column` in fct_backlog_daily
+#       quantile value = the `q` quantile of `column` in fct_cases
+metrics:
+  - name: case_volume
+    label: Cases opened
+    kind: ratio
+    numerator: cases
+    denominator: null
+    unit: cases
+    better: neutral
+    owner: Support Operations
+    description: Number of cases opened in the period.
+
+  - name: first_response_sla_attainment
+    label: First-response SLA attainment
+    kind: ratio
+    numerator: first_response_sla_met_cases
+    denominator: cases
+    unit: share
+    better: higher
+    owner: Support Operations
+    description: >
+      Share of cases whose first agent response came within the target for the case's
+      priority and the support tier the customer held when the case was opened.
+
+  - name: mean_first_response_minutes
+    label: Mean first-response time
+    kind: ratio
+    numerator: first_response_minutes_sum
+    denominator: cases
+    unit: minutes
+    better: lower
+    owner: Support Operations
+    description: Average minutes from case creation to the first agent response.
+
+  - name: median_first_response_minutes
+    label: Median first-response time
+    kind: quantile
+    column: first_response_minutes
+    q: 0.5
+    unit: minutes
+    better: lower
+    owner: Support Operations
+    description: >
+      Median minutes to first response. Reported with the mean because a few very slow
+      responses move the mean a long way.
+
+  - name: mean_resolution_hours
+    label: Mean time to resolve
+    kind: ratio
+    numerator: resolution_hours_sum
+    denominator: cases
+    unit: hours
+    better: lower
+    owner: Support Operations
+    description: Average hours from case creation to the first resolution.
+
+  - name: escalation_rate
+    label: Escalation rate
+    kind: ratio
+    numerator: escalated_cases
+    denominator: cases
+    unit: share
+    better: lower
+    owner: Support Engineering
+    description: Share of cases escalated to engineering at least once.
+
+  - name: reopen_rate
+    label: Reopen rate
+    kind: ratio
+    numerator: reopened_cases
+    denominator: cases
+    unit: share
+    better: lower
+    owner: Support Quality
+    description: Share of resolved cases the customer reopened.
+
+  - name: csat_score
+    label: CSAT (mean score)
+    kind: ratio
+    numerator: csat_score_sum
+    denominator: csat_responses
+    unit: score 1 to 5
+    better: higher
+    owner: Support Quality
+    description: Mean satisfaction score over survey responses; cases without a response are excluded.
+
+  - name: csat_satisfied_share
+    label: CSAT (share satisfied)
+    kind: ratio
+    numerator: csat_satisfied_responses
+    denominator: csat_responses
+    unit: share
+    better: higher
+    owner: Support Quality
+    description: Share of survey responses scoring 4 or 5.
+
+  - name: csat_response_rate
+    label: Survey response rate
+    kind: ratio
+    numerator: csat_responses
+    denominator: cases
+    unit: share
+    better: higher
+    owner: Support Quality
+    description: Share of cases with a satisfaction survey response. Read CSAT alongside it.
+
+  - name: open_backlog
+    label: Open backlog
+    kind: level
+    column: open_cases
+    unit: cases
+    better: lower
+    owner: Support Operations
+    description: Cases open at the end of the day, averaged over the days in the period.

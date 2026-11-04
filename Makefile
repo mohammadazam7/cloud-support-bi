@@ -1,4 +1,4 @@
-.PHONY: install lock lint format typecheck test audit check data seeds models freshness clean
+.PHONY: install lock lint format typecheck test audit check data seeds models metrics freshness clean
 
 install:
 	pip install -r requirements-dev.lock
@@ -33,6 +33,9 @@ seeds:
 
 models: data
 	cd dbt && dbt build --profiles-dir .
+
+metrics:
+	support-bi metrics
 
 freshness:
 	cd dbt && dbt source freshness --profiles-dir .
