@@ -148,3 +148,19 @@ models:
               arguments:
                 to: ref('fct_cases')
                 field: case_id
+
+  - name: agg_support_daily
+    description: >
+      Additive daily components of every support metric by product, priority, tier and
+      channel. Compute ratios as sum(numerator) / sum(denominator) over the selected rows.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [created_date, product_code, priority, tier, channel]
+
+  - name: fct_backlog_daily
+    description: Open cases at the end of each day by product and priority.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [backlog_date, product_code, priority]
