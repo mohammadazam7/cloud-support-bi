@@ -6,4 +6,4 @@ select
     event_type,
     {{ utc_timestamp('occurred_at') }} as occurred_at,
     agent_id
-from {{ raw_table('case_events') }}
+from {{ source('raw', 'case_events') }}

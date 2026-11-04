@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw zone written by `support-bi generate`. On DuckDB each table is read from its
+      Parquet file; on BigQuery the load job writes the same tables to the `raw` dataset.
+    schema: raw
+    config:
+      external_location: "{{ env_var('SUPPORT_BI_RAW', '../data/raw') }}/{name}/{name}.parquet"
+    freshness:
+      warn_after: {count: 2, period: day}
+      error_after: {count: 4, period: day}
+    tables:
+      - name: cases
+        loaded_at_field: created_at
+      - name: case_events
+        loaded_at_field: occurred_at
+      - name: csat_responses
+        loaded_at_field: submitted_at
+      - name: customers
+        freshness: null
+      - name: customer_tier_history
+        freshness: null
+      - name: agents
+        freshness: null

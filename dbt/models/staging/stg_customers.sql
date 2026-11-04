@@ -4,4 +4,4 @@ select
     contact_email,
     region,
     cast(signup_date as date) as signup_date
-from {{ raw_table('customers') }}
+from {{ source('raw', 'customers') }}

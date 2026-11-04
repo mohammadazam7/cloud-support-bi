@@ -7,4 +7,4 @@ select
     channel,
     {{ utc_timestamp('created_at') }} as created_at,
     subject
-from {{ raw_table('cases') }}
+from {{ source('raw', 'cases') }}

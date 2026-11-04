@@ -55,8 +55,13 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements-dev.lock && pip install -e . --no-deps
-      - name: Generate 90 days of synthetic data
-        run: support-bi generate --out data/raw --days 90 --customers 400 --agents 30
+      - name: Generate 90 days of synthetic data ending today
+        run: |
+          support-bi generate --out data/raw --days 90 --customers 400 --agents 30 \
+            --start "$(date -u -d '90 days ago' +%F)"
       - name: Build and test every model
         working-directory: dbt
         run: dbt build --profiles-dir .
+      - name: Check source freshness
+        working-directory: dbt
+        run: dbt source freshness --profiles-dir .

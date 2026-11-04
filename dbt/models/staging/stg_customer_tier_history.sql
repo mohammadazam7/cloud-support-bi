@@ -3,4 +3,4 @@ select
     customer_id,
     tier,
     cast(effective_from as date) as effective_from
-from {{ raw_table('customer_tier_history') }}
+from {{ source('raw', 'customer_tier_history') }}
