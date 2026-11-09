@@ -7,7 +7,7 @@ items are done.
       generator for customers, agents, cases, case events, CSAT surveys and staffing,
       with realistic seasonality, priority mix and SLA behaviour, written to a raw zone
       as Parquet.
-- [ ] **M2: Data models and metric layer** (Nov 3 to Nov 7). dbt project on DuckDB and
+- [x] **M2: Data models and metric layer** (Nov 3 to Nov 7). dbt project on DuckDB and
       BigQuery targets: staging, intermediate and mart layers; star schema with a type 2
       customer dimension; incremental event fact; partitioning and clustering; tests,
       contracts and source freshness; governed metric definitions and a metric
