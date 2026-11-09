@@ -26,3 +26,6 @@ service-account*.json
 .DS_Store
 .idea/
 .vscode/
+
+# dbt
+dbt/.user.yml

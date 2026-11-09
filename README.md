@@ -6,9 +6,26 @@ Single-source-of-truth analytics for a cloud support organization: raw case even
 modelled into tested data marts, one governed definition per metric, dashboards on top of
 that layer, and leadership reporting that builds itself.
 
-> **Status:** in development. The synthetic case data and raw zone are in place; the dbt
-> models are next. See the [roadmap](docs/ROADMAP.md) for milestone dates. Results will
-> be published here only once they have been measured.
+> **Status:** in development. The data generator, the dbt star schema and the governed
+> metric layer are built and tested; LookML, access controls and the weekly report are
+> next. See the [roadmap](docs/ROADMAP.md) for milestone dates.
+
+## Results so far
+
+Measured on the default synthetic year (seed 7: 1,200 customers, 80 agents, 89,708
+cases). The data is synthetic, so these numbers show the pipeline works end to end, not
+facts about any real support organization.
+
+| Measure | Value |
+|---|---|
+| dbt models, seeds and tests passing | 77 |
+| First-response SLA attainment | 78.2% |
+| Mean CSAT when the SLA was met / missed | 4.27 / 3.20 |
+| Mean open backlog, P1 to P4 | 4.7 / 45 / 247 / 299 cases |
+| Python test coverage | 98% |
+
+Reproduce with `make data models` and
+`support-bi metric first_response_sla_attainment --warehouse data/warehouse.duckdb`.
 
 ## Overview
 
@@ -47,12 +64,15 @@ flowchart LR
 | Layer | Responsibility |
 |---|---|
 | Generator | Reproducible case, event, survey and staffing data with realistic seasonality, priority mix and SLA behaviour |
-| dbt staging and intermediate | Type casting, deduplication, business-hours arithmetic, case lifecycle reconstruction from events |
+| dbt staging and intermediate | Type casting, UTC conversion, case lifecycle reconstruction from events, customer tier periods |
 | Data marts | `fct_cases`, `fct_case_events`, `dim_customer` (type 2 history of support tier), `dim_product`, `dim_agent`, `dim_date` |
 | Metric layer | One definition per metric: first response time, time to resolution, SLA attainment, backlog, CSAT, escalation rate, reopen rate |
 | BI | LookML views, explores and dashboards with row-level access filters |
 | Automation | Scheduled build of the weekly leadership report |
 | Analytics | Case volume forecast, escalation risk model, SLA breach anomaly detection, process change impact analysis |
+
+See [docs/architecture.md](docs/architecture.md) for the star schema, quality gates and
+[design decisions](docs/adr/README.md).
 
 SQL is written in the BigQuery dialect. Continuous integration runs the same dbt models
 on DuckDB, so every change is built and tested without cloud credentials; the BigQuery

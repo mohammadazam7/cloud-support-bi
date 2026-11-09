@@ -1,0 +1,9 @@
+product_code,product_name,product_family
+GCE,Compute Engine,Compute
+GKE,Kubernetes Engine,Compute
+BQ,BigQuery,Data analytics
+SQL,Cloud SQL,Databases
+GCS,Cloud Storage,Storage
+IAM,Identity and Access Management,Security
+NET,Cloud Networking,Networking
+BILL,Billing,Account

@@ -1,0 +1,166 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: >
+      Customer dimension, type 2 on support tier. One row per customer per tier period.
+      Join facts on the period that contains the event date.
+    columns:
+      - name: customer_key
+        description: Surrogate key for one customer tier period.
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests: [not_null]
+      - name: tier
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [STD, ENH, PREM]
+      - name: is_current
+        description: True for the period that is still in force.
+
+  - name: dim_product
+    columns:
+      - name: product_code
+        data_tests: [unique, not_null]
+
+  - name: dim_priority
+    columns:
+      - name: priority
+        data_tests: [unique, not_null]
+
+  - name: dim_agent
+    columns:
+      - name: agent_id
+        data_tests: [unique, not_null]
+
+  - name: dim_date
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+
+  - name: fct_cases
+    description: >
+      One row per support case with its tier at open, stage durations and whether the
+      first-response SLA was met. Partitioned by month and clustered by product and
+      priority on BigQuery. The contract is enforced: a change to any column name or type
+      fails the build until this file is updated.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: case_id
+        data_type: string
+        constraints: [{type: not_null}]
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_type: string
+      - name: customer_key
+        data_type: string
+        description: Key of the dim_customer row (tier period) in force when the case opened.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: tier_at_open
+        data_type: string
+      - name: product_code
+        data_type: string
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_code
+      - name: priority
+        data_type: string
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_priority')
+                field: priority
+      - name: channel
+        data_type: string
+      - name: created_at
+        data_type: timestamp
+        description: When the case was opened, UTC.
+      - name: created_date
+        data_type: date
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: agent_id
+        data_type: string
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_agent')
+                field: agent_id
+      - name: first_response_at
+        data_type: timestamp
+      - name: escalated_at
+        data_type: timestamp
+        description: Null when the case was never escalated.
+      - name: first_resolved_at
+        data_type: timestamp
+      - name: final_resolved_at
+        data_type: timestamp
+        description: Last resolution; later than first_resolved_at only for reopened cases.
+      - name: reopen_count
+        data_type: int64
+      - name: first_response_minutes
+        data_type: numeric
+        description: Minutes from case creation to the first agent response.
+        data_tests: [not_null]
+      - name: resolution_hours
+        data_type: numeric
+        description: Hours from creation to the first resolution.
+      - name: csat_score
+        data_type: int64
+        description: Satisfaction score from 1 to 5, null when the customer did not respond.
+      - name: first_response_target_minutes
+        data_type: int64
+        description: Target for this priority and the tier held at open, from sla_targets.
+        data_tests: [not_null]
+      - name: first_response_sla_met
+        data_type: boolean
+        data_tests: [not_null]
+      - name: is_escalated
+        data_type: boolean
+      - name: is_reopened
+        data_type: boolean
+      - name: has_csat_response
+        data_type: boolean
+
+  - name: fct_case_events
+    description: >
+      Every case lifecycle event, incremental on event_id with a lookback window for late
+      arrivals. Partitioned by day and clustered by event type on BigQuery.
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: case_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('fct_cases')
+                field: case_id
+
+  - name: agg_support_daily
+    description: >
+      Additive daily components of every support metric by product, priority, tier and
+      channel. Compute ratios as sum(numerator) / sum(denominator) over the selected rows.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [created_date, product_code, priority, tier, channel]
+
+  - name: fct_backlog_daily
+    description: Open cases at the end of each day by product and priority.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [backlog_date, product_code, priority]

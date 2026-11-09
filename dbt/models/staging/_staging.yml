@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: stg_cases
+    description: One row per support case at creation.
+    columns:
+      - name: case_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('stg_customers'), field: customer_id}
+      - name: priority
+        tests:
+          - accepted_values:
+              arguments: {values: [P1, P2, P3, P4]}
+      - name: channel
+        tests:
+          - accepted_values:
+              arguments: {values: [web, email, phone, chat]}
+      - name: created_at
+        tests: [not_null]
+
+  - name: stg_case_events
+    description: Case lifecycle events.
+    columns:
+      - name: event_id
+        tests: [unique, not_null]
+      - name: case_id
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('stg_cases'), field: case_id}
+      - name: event_type
+        tests:
+          - accepted_values:
+              arguments:
+                values: [created, assigned, first_response, escalated, resolved, reopened]
+      - name: agent_id
+        tests:
+          - relationships:
+              arguments: {to: ref('stg_agents'), field: agent_id}
+
+  - name: stg_customers
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: region
+        tests:
+          - accepted_values:
+              arguments: {values: [NA, LATAM, EMEA, APAC]}
+
+  - name: stg_customer_tier_history
+    columns:
+      - name: tier
+        tests:
+          - accepted_values:
+              arguments: {values: [STD, ENH, PREM]}
+    tests:
+      - unique_combination:
+          arguments:
+            columns: [customer_id, effective_from]
+
+  - name: stg_agents
+    columns:
+      - name: agent_id
+        tests: [unique, not_null]
+
+  - name: stg_csat_responses
+    columns:
+      - name: case_id
+        tests:
+          - unique
+          - relationships:
+              arguments: {to: ref('stg_cases'), field: case_id}
+      - name: score
+        tests:
+          - accepted_values:
+              arguments: {values: [1, 2, 3, 4, 5], quote: false}
