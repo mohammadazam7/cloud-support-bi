@@ -9,6 +9,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from support_bi import lookml
 from support_bi import metrics as metric_layer
 from support_bi.generator import GeneratorConfig, generate
 from support_bi.raw_zone import verify_raw_zone, write_raw_zone
@@ -36,6 +37,9 @@ def _parser() -> argparse.ArgumentParser:
 
     m = sub.add_parser("metrics", help="write the metric dictionary from metrics/metrics.yml")
     m.add_argument("--out", type=Path, default=Path("docs/metric_dictionary.md"))
+
+    k = sub.add_parser("lookml", help="write LookML views and the model from metrics/metrics.yml")
+    k.add_argument("--out", type=Path, default=Path("looker"), help="LookML project directory")
 
     q = sub.add_parser("metric", help="print the SQL for one metric, or run it on DuckDB")
     q.add_argument("name", help="metric name from metrics/metrics.yml")
@@ -86,6 +90,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(metric_layer.dictionary(metric_layer.load()), encoding="utf-8")
         print(args.out)
+        return 0
+    if args.command == "lookml":
+        for path in lookml.write(metric_layer.load(), args.out):
+            print(path)
         return 0
     if args.command == "metric":
         return _metric(args)

@@ -1,4 +1,4 @@
-.PHONY: install lock lint format typecheck test audit check data seeds models metrics freshness clean
+.PHONY: install lock lint format typecheck test audit check data seeds models metrics lookml freshness clean
 
 install:
 	pip install -r requirements-dev.lock
@@ -36,6 +36,9 @@ models: data
 
 metrics:
 	support-bi metrics
+
+lookml:
+	support-bi lookml
 
 freshness:
 	cd dbt && dbt source freshness --profiles-dir .
