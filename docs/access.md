@@ -19,9 +19,9 @@ Two dbt tests guard it: one fails if any row still shows a name, a full email ad
 or an id; the other fails if two customers ever share a label. The generated LookML has
 a test that no view or explore refers to `dim_customer` or `customer_name`.
 
-On BigQuery the reporting dataset is the only one the Looker service account is granted;
-the view is an authorized view over the marts. That grant is deployment configuration
-and is not in this repository.
+For this to hold on BigQuery, the Looker service account should be granted the reporting
+dataset only, with the view authorized over the marts. That grant is deployment
+configuration; nothing in this repository sets it up and no deployment exists yet.
 
 ## Rows are limited by region
 
