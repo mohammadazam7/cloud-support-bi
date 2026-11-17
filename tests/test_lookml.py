@@ -76,13 +76,52 @@ def test_views_expose_only_dimensions_their_mart_has() -> None:
     assert dims(Kind.LEVEL) == {"product_code", "priority"}
 
 
-def test_model_has_one_explore_per_view(files: dict[str, str]) -> None:
+def test_model_has_one_explore_per_fact(files: dict[str, str]) -> None:
     parsed = lkml.load(files["support_bi.model.lkml"])
     assert [e["name"] for e in parsed["explores"]] == [
-        "agg_support_daily",
         "fct_cases",
+        "agg_support_daily",
         "fct_backlog_daily",
     ]
+
+
+def test_the_case_explore_filters_rows_by_the_users_region(files: dict[str, str]) -> None:
+    parsed = lkml.load(files["support_bi.model.lkml"])
+    cases = next(e for e in parsed["explores"] if e["name"] == "fct_cases")
+    assert cases["access_filters"] == [
+        {"field": "customers.region", "user_attribute": "support_region"}
+    ]
+    [join] = cases["joins"]
+    assert join["name"] == "customers" and join["relationship"] == "many_to_one"
+    assert join["sql_on"] == "${fct_cases.customer_key} = ${customers.customer_key}"
+
+
+def test_explores_that_cannot_be_filtered_by_region_need_the_all_regions_grant(
+    files: dict[str, str],
+) -> None:
+    parsed = lkml.load(files["support_bi.model.lkml"])
+    [grant] = parsed["access_grants"]
+    assert grant == {
+        "name": "all_regions",
+        "user_attribute": "support_scope",
+        "allowed_values": ["global"],
+    }
+    for explore in parsed["explores"]:
+        filtered = "access_filters" in explore
+        granted = explore.get("required_access_grants") == ["all_regions"]
+        assert filtered != granted, f"{explore['name']} must be limited exactly one way"
+
+
+def test_customers_come_from_the_masked_view_and_expose_no_identifier(
+    files: dict[str, str],
+) -> None:
+    [view] = lkml.load(files["views/customers.view.lkml"])["views"]
+    assert view["sql_table_name"] == "reporting.rpt_customers"
+    shown = {d["name"] for d in view["dimensions"] if d.get("hidden") != "yes"}
+    assert shown == {"customer_label", "email_domain", "region", "tier", "tier_name"}
+    assert not shown & {"customer_name", "contact_email", "customer_id"}
+    for content in files.values():
+        assert "dim_customer" not in content and "customer_name" not in content
 
 
 def test_labels_with_quotes_stay_valid() -> None:
@@ -94,4 +133,4 @@ def test_labels_with_quotes_stay_valid() -> None:
 def test_cli_writes_the_project(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["lookml", "--out", str(tmp_path)]) == 0
     written = capsys.readouterr().out.split()
-    assert len(written) == 4 and all(Path(p).exists() for p in written)
+    assert len(written) == 5 and all(Path(p).exists() for p in written)

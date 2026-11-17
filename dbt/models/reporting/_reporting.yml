@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: rpt_customers
+    description: >
+      The customer dimension with personal data masked, for BI tools. Same grain and key
+      as dim_customer. Names become stable pseudonyms and email addresses are reduced to
+      their domain; the customer id is not exposed at all.
+    columns:
+      - name: customer_key
+        description: Joins to fct_cases.customer_key.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: customer_label
+        description: Pseudonym derived from the customer id; the same customer always gets the same label.
+        data_tests: [not_null]
+      - name: email_domain
+        description: Domain of the contact email address.
+      - name: region
+        description: Sales region; LookML filters rows on this for regional users.
+        data_tests: [not_null]

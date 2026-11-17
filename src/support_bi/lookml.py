@@ -10,8 +10,9 @@ what a metric means. One view is written per mart the metrics read:
 - ``fct_backlog_daily``: the open backlog, summed within a day and averaged over days.
 
 The three marts have different grains, so each gets its own explore instead of a join
-that would fan out. The files under ``looker/`` are committed; a test fails when they
-drift from the spec.
+that would fan out. Customers come from the masked reporting view, and the model limits
+rows by region (see :func:`model`). The files under ``looker/`` are committed; a test
+fails when they drift from the spec.
 """
 
 from __future__ import annotations
@@ -109,6 +110,15 @@ def view(kind: Kind, metrics: Mapping[str, Metric], schema: str = "marts") -> st
     """The LookML view over the mart that metrics of ``kind`` read."""
     relation = _RELATION[kind]
     blocks = _dimensions(kind)
+    if kind is Kind.QUANTILE:
+        # The case fact joins to customers; the key itself is not something to chart.
+        blocks.append(
+            "  dimension: customer_key {\n"
+            "    hidden: yes\n"
+            "    type: string\n"
+            "    sql: ${TABLE}.customer_key ;;\n"
+            "  }"
+        )
     if kind is Kind.RATIO:
         blocks += _components()
     blocks += [_measure(m) for m in metrics.values() if m.kind is kind]
@@ -118,25 +128,84 @@ def view(kind: Kind, metrics: Mapping[str, Metric], schema: str = "marts") -> st
     )
 
 
+REGION_ATTRIBUTE = "support_region"
+SCOPE_ATTRIBUTE = "support_scope"
+GLOBAL_SCOPE = "global"
+CUSTOMER_DIMENSIONS = ("customer_label", "email_domain", "region", "tier", "tier_name")
+
+
+def customers_view(schema: str = "reporting") -> str:
+    """Customers as dashboards may see them: the masked dbt view, never dim_customer."""
+    blocks = [
+        "  dimension: customer_key {\n"
+        "    primary_key: yes\n"
+        "    hidden: yes\n"
+        "    type: string\n"
+        "    sql: ${TABLE}.customer_key ;;\n"
+        "  }"
+    ]
+    blocks += [
+        f"  dimension: {name} {{\n    type: string\n    sql: ${{TABLE}}.{name} ;;\n  }}"
+        for name in CUSTOMER_DIMENSIONS
+    ]
+    body = "\n\n".join(blocks)
+    table = f"  sql_table_name: {schema}.rpt_customers ;;"
+    return f"{HEADER}\nview: customers {{\n{table}\n\n{body}\n}}\n"
+
+
 def model(connection: str = "support_warehouse") -> str:
-    explores = "\n\n".join(
-        f"explore: {relation} {{\n  label: {_text(label)}\n}}"
+    """The model: who may open which explore, and which rows they get.
+
+    Row-level access is by region, using two Looker user attributes:
+
+    - ``support_region`` filters the case explore to the user's customers. It holds a
+      region (``EMEA``), a list (``NA, LATAM``) or ``%`` for every region.
+    - ``support_scope`` set to ``global`` opens the two aggregate explores. Their rows
+      carry no customer and cannot be filtered by region, so a regional user gets their
+      numbers from the case explore instead.
+
+    A filter value cannot double as the grant: ``%`` is a pattern in a filter but just
+    a string in ``allowed_values``, which is why there are two attributes.
+    """
+    grant = (
+        "access_grant: all_regions {\n"
+        f"  user_attribute: {SCOPE_ATTRIBUTE}\n"
+        f"  allowed_values: [{_text(GLOBAL_SCOPE)}]\n"
+        "}"
+    )
+    cases = (
+        "explore: fct_cases {\n"
+        f"  label: {_text('Cases')}\n"
+        "  access_filter: {\n"
+        "    field: customers.region\n"
+        f"    user_attribute: {REGION_ATTRIBUTE}\n"
+        "  }\n"
+        "  join: customers {\n"
+        "    type: inner\n"
+        "    relationship: many_to_one\n"
+        "    sql_on: ${fct_cases.customer_key} = ${customers.customer_key} ;;\n"
+        "  }\n"
+        "}"
+    )
+    aggregates = "\n\n".join(
+        f"explore: {relation} {{\n  label: {_text(label)}\n"
+        "  required_access_grants: [all_regions]\n}"
         for relation, label in [
             ("agg_support_daily", "Support metrics (daily)"),
-            ("fct_cases", "Cases"),
             ("fct_backlog_daily", "Backlog"),
         ]
     )
     return (
         f"{HEADER}\nconnection: {_text(connection)}\n\n"
         'include: "/views/*.view.lkml"\n\n'
-        f"{explores}\n"
+        f"{grant}\n\n{cases}\n\n{aggregates}\n"
     )
 
 
 def render(metrics: Mapping[str, Metric]) -> dict[str, str]:
     """Every generated file, keyed by its path under ``looker/``."""
     files = {f"views/{_RELATION[kind]}.view.lkml": view(kind, metrics) for kind in Kind}
+    files["views/customers.view.lkml"] = customers_view()
     files[f"{MODEL}.model.lkml"] = model()
     return files
 

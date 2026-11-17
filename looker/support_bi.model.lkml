@@ -4,14 +4,30 @@ connection: "support_warehouse"
 
 include: "/views/*.view.lkml"
 
-explore: agg_support_daily {
-  label: "Support metrics (daily)"
+access_grant: all_regions {
+  user_attribute: support_scope
+  allowed_values: ["global"]
 }
 
 explore: fct_cases {
   label: "Cases"
+  access_filter: {
+    field: customers.region
+    user_attribute: support_region
+  }
+  join: customers {
+    type: inner
+    relationship: many_to_one
+    sql_on: ${fct_cases.customer_key} = ${customers.customer_key} ;;
+  }
+}
+
+explore: agg_support_daily {
+  label: "Support metrics (daily)"
+  required_access_grants: [all_regions]
 }
 
 explore: fct_backlog_daily {
   label: "Backlog"
+  required_access_grants: [all_regions]
 }

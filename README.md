@@ -67,7 +67,7 @@ flowchart LR
 | dbt staging and intermediate | Type casting, UTC conversion, case lifecycle reconstruction from events, customer tier periods |
 | Data marts | `fct_cases`, `fct_case_events`, `dim_customer` (type 2 history of support tier), `dim_product`, `dim_agent`, `dim_date` |
 | Metric layer | One definition per metric: first response time, time to resolution, SLA attainment, backlog, CSAT, escalation rate, reopen rate |
-| BI | LookML views and explores generated from the metric definitions (`looker/`, `make lookml`); dashboards and row-level access filters come next |
+| BI | LookML views and explores generated from the metric definitions (`looker/`, `make lookml`), customers masked in a reporting view, rows limited by region ([who sees what](docs/access.md)); dashboards come next |
 | Automation | Scheduled build of the weekly leadership report |
 | Analytics | Case volume forecast, escalation risk model, SLA breach anomaly detection, process change impact analysis |
 

@@ -31,6 +31,12 @@ view: fct_cases {
     sql: ${TABLE}.channel ;;
   }
 
+  dimension: customer_key {
+    hidden: yes
+    type: string
+    sql: ${TABLE}.customer_key ;;
+  }
+
   measure: median_first_response_minutes {
     type: percentile
     percentile: 50
